@@ -2,6 +2,7 @@ from django.db.models import query
 from django.db.models.query import QuerySet
 from django.shortcuts import render
 from django.http import HttpResponse, HttpRequest, JsonResponse, request
+from django.views.generic.base import View
 from rest_framework import serializers
 from rest_framework import permissions
 from rest_framework import views
@@ -21,6 +22,7 @@ from rest_framework.authentication import SessionAuthentication, BasicAuthentica
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import viewsets
 from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
 # Create your views here.
 
 @api_view(['GET', 'POST']) #extending api_view class
@@ -123,6 +125,7 @@ class Articles_Generic_Detail(GenericAPIView, ListModelMixin, CreateModelMixin,R
     queryset= Articles.objects.all()
     authentication_classes = [SessionAuthentication, BasicAuthentication]
     permission_classes = [IsAuthenticated]
+
     # lookup_field = 'id'
 
     def get(self, request, pk=None):
@@ -141,9 +144,15 @@ class Articles_Generic_List(GenericAPIView, ListModelMixin, CreateModelMixin,Ret
     serializer_class = Articles_Serializer
     queryset= Articles.objects.all()
     # authentication_classes = [SessionAuthentication, BasicAuthentication]
-    authentication_classes = [TokenAuthentication]
+    # authentication_classes = [TokenAuthentication]
+    # permission_classes = [IsAuthenticated]
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
     permission_classes = [IsAuthenticated]
+    # template_name = 'api_basic/articles.html'
     # lookup_field = 'id'
+    filterset_fields = ['title','author']
+    ordering_fields=['id', 'date']
+
 
     def get(self, request):
         print(request.session.session_key)
@@ -185,38 +194,38 @@ class Articles_Viewset(viewsets.ViewSet):
 class Articles_GenViewset(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin):
     serializer_class = Articles_Serializer
     queryset = Articles.objects.all()
+    filters_backends = [DjangoFilterBackend]
+    filterset_fields = ['author']
 
 class Articles_ModelViewset(viewsets.ModelViewSet):
     serializer_class = Articles_Serializer
     queryset = Articles.objects.all()
     
     
-class Articles_Html(APIView):
-    queryset = Articles.objects.all()
-    renderer_class = [TemplateHTMLRenderer]
 
-    def get(self, request):
-        articles = "test"
-        return Response({'data': articles}, template_name='article_html.html')
 
-class Html_List(GenericAPIView):
+class Html_List(APIView):
+    renderer_classes = [TemplateHTMLRenderer, JSONRenderer, BrowsableAPIRenderer]
+    template_name='api_basic/articles.html'
+    # filters_backends = [DjangoFilterBackend]
+    filterset_fields = ['title','author']
     """
     A view that returns a templated HTML representation of a given user.
     """
-    serializer_class = Articles_Serializer
-    queryset= Articles.objects.all()
-    renderer_classes= [TemplateHTMLRenderer, JSONRenderer, BrowsableAPIRenderer]
-    # TemplateHTMLRenderer.format = 'api'
-    # authentication_classes = [SessionAuthentication, BasicAuthentication]
-    # authentication_classes = [TokenAuthentication]
-    # permission_classes = [IsAuthenticated]
-    # lookup_field = 'id'
-
+        
+    
     def get(self, request):
-        data = Articles.objects.all()
-        data_slz = Articles_Serializer(data, many=True)
         
-        
+        queryset= Articles.objects.all()
 
-        return Response({'data':data_slz.data}, template_name='api_basic/articles.html')
+        get_slz = Articles_Serializer(queryset, many=True)
 
+        return Response(data ={'data':get_slz.data}, status= status.HTTP_200_OK)
+
+    def post(self, request):
+        data = request.data
+        post_slz = Articles_Serializer(data=data)
+        if post_slz.is_valid():
+            post_slz.save()        
+            return Response({'data': post_slz.data}, status=status.HTTP_201_CREATED)
+        return Response({'errors':post_slz.errors },status=status.HTTP_400_BAD_REQUEST)

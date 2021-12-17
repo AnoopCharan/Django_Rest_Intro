@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'api_basic',
     'debug_toolbar',
     'rest_framework.authtoken',
+    'django_filters'
     
 ]
 
@@ -146,5 +147,9 @@ REST_FRAMEWORK = {
         'rest_framework.renderers.JSONRenderer',
         'rest_framework.renderers.BrowsableAPIRenderer',
         'rest_framework.renderers.TemplateHTMLRenderer'
-    ]
+    ],
+        
+        
+    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend']
+
 }
