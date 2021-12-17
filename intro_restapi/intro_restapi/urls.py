@@ -19,6 +19,8 @@ from django.urls.conf import include
 from rest_framework import routers
 from api_basic import views
 from django.conf import settings
+from rest_framework.documentation import include_docs_urls
+from rest_framework.schemas import get_schema_view
 
 
 
@@ -26,6 +28,13 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/',include('api_basic.urls')),
     path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
+    path('schema', get_schema_view(
+                                    title='intro to rest', 
+                                    description='first try at REST', 
+                                    version='1.0.0' ), 
+                                    name='openapi_schema'
+                                    ),
+    path('docs/', include_docs_urls(title='BlogAPI'))
 
 
 ]
